@@ -1,6 +1,6 @@
 <style>
 .wrap { padding: 1rem 0; }
-.metric-grid { display: grid; grid-template-columns: repeat(1,1fr); gap: 12px; margin-bottom: 1.5rem; }
+.metric-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 1.5rem; }
 .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; }
 .metric-label { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 4px; }
 .metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin: 0; }
@@ -27,6 +27,125 @@ td { padding: 7px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); 
 .tooltip-icon { font-size: 12px; color: var(--color-text-tertiary); cursor: default; margin-left: 4px; }
 .tooltip-box { display: none; position: absolute; left: 0; top: 18px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 6px 10px; font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; z-index: 10; min-width: 220px; line-height: 1.5; }
 .tooltip-wrap:hover .tooltip-box { display: block; }
+
+/* Estilos do gráfico */
+.chart-container {
+  background: white;
+  border-radius: var(--border-radius-md);
+  padding: 1.5rem;
+  margin: 1.5rem 0 0 0;
+  border: 0.5px solid var(--color-border-secondary);
+  position: relative;
+}
+.chart-container h3 {
+  margin: 0 0 1rem 0;
+  font-size: 16px;
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+.chart-wrapper {
+  width: 100%;
+  height: 400px;
+}
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  justify-content: flex-end;
+  padding-bottom: 30px;
+  position: relative;
+}
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+}
+.bar-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  min-width: 65px;
+  text-align: right;
+  font-weight: 500;
+}
+.bar-track {
+  flex: 1;
+  height: 24px;
+  background: var(--color-background-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.bar-fill-chart {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  background: #378ADD;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  min-width: 30px;
+}
+.bar-fill-chart .bar-value {
+  font-size: 11px;
+  color: white;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.bar-fill-chart.destaque {
+  background: #C0392B;
+}
+.bar-fill-chart.destaque2 {
+  background: #E67E22;
+}
+.bar-fill-chart.destaque3 {
+  background: #2980B9;
+}
+.chart-y-axis {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 75px 0 75px;
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+}
+.chart-y-axis span {
+  position: relative;
+}
+.chart-y-axis span::before {
+  content: '';
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  width: 1px;
+  height: 6px;
+  background: var(--color-border-secondary);
+}
+.chart-container .legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+.chart-container .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chart-container .legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
 </style>
 
 <div class="wrap">
@@ -63,6 +182,30 @@ td { padding: 7px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); 
     </thead>
     <tbody id="tbody"></tbody>
   </table>
+
+  <!-- GRÁFICO DINÂMICO - AGORA ABAIXO DA TABELA -->
+  <div class="chart-container">
+    <h3>📊 Frequência das Necessidades por Linha</h3>
+    <div class="chart-wrapper" id="chartWrapper">
+      <div class="bar-chart" id="barChart">
+        <!-- As barras serão geradas dinamicamente -->
+      </div>
+      <div class="chart-y-axis" id="chartYAxis">
+        <span>0%</span>
+        <span>10%</span>
+        <span>20%</span>
+        <span>30%</span>
+        <span>40%</span>
+        <span>50%</span>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-color" style="background:#C0392B;"></span> Maior demanda</span>
+      <span class="legend-item"><span class="legend-color" style="background:#E67E22;"></span> Alta demanda</span>
+      <span class="legend-item"><span class="legend-color" style="background:#2980B9;"></span> Demanda média</span>
+      <span class="legend-item"><span class="legend-color" style="background:#378ADD;"></span> Demanda baixa</span>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -149,6 +292,63 @@ function checkChanged(i) {
   inputs[i].piso.classList.toggle('changed',  parseInt(inputs[i].piso.value)!==o.piso);
 }
 
+function updateChart() {
+  // Coletar dados atuais
+  const data = inputs.map((row, i) => ({
+    linha: cats[i].linha,
+    label: cats[i].label,
+    ocorr: parseInt(row.ocorr.value) || 0,
+    custo: parseInt(row.peso.value) || 1,
+    piso: parseInt(row.piso.value) || 0
+  }));
+
+  // Calcular total e frequências
+  const totalOcorr = data.reduce((s, d) => s + d.ocorr, 0);
+  const maxOcorr = Math.max(...data.map(d => d.ocorr));
+
+  // Ordenar por ocorrências (decrescente)
+  const sorted = [...data].sort((a, b) => b.ocorr - a.ocorr);
+
+  // Gerar barras
+  const chart = document.getElementById('barChart');
+  chart.innerHTML = '';
+
+  sorted.forEach((d, i) => {
+    const pct = totalOcorr > 0 ? (d.ocorr / totalOcorr) * 100 : 0;
+    const label = `Linha ${d.linha}`;
+    
+    // Determinar classe de cor baseada na posição
+    let colorClass = '';
+    if (i === 0) colorClass = 'destaque';
+    else if (i === 1) colorClass = 'destaque2';
+    else if (i === 2) colorClass = 'destaque3';
+    
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    
+    const labelEl = document.createElement('span');
+    labelEl.className = 'bar-label';
+    labelEl.textContent = label;
+    
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+    
+    const fill = document.createElement('div');
+    fill.className = `bar-fill-chart ${colorClass}`;
+    fill.style.width = Math.max(pct, 3) + '%';
+    
+    const value = document.createElement('span');
+    value.className = 'bar-value';
+    value.textContent = pct > 3 ? pct.toFixed(1) + '%' : '';
+    fill.appendChild(value);
+    
+    track.appendChild(fill);
+    row.appendChild(labelEl);
+    row.appendChild(track);
+    chart.appendChild(row);
+  });
+}
+
 function render() {
   const orc = parseInt(document.getElementById('orcamento').value);
   document.getElementById('orc-label').textContent = 'R$ '+orc.toLocaleString('pt-BR');
@@ -170,6 +370,9 @@ function render() {
     tr.querySelector('.pw').textContent   = v.peso;
     tr.querySelector('.bar-fill').style.width = Math.min(pct,100)+'%';
   });
+  
+  // Atualizar gráfico
+  updateChart();
 }
 
 function buildTable() {
