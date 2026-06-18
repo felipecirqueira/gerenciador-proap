@@ -1,0 +1,239 @@
+
+<style>
+.wrap { padding: 1rem 0; }
+.metric-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 1.5rem; }
+.metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; }
+.metric-label { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 4px; }
+.metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin: 0; }
+.controls { display: flex; align-items: center; gap: 16px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.controls label { font-size: 13px; color: var(--color-text-secondary); }
+.controls input[type=range] { width: 180px; }
+.controls span { font-size: 14px; font-weight: 500; min-width: 80px; }
+.mode-btn { font-size: 12px; padding: 5px 12px; cursor: pointer; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); }
+.mode-btn.active { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); font-weight: 500; }
+.mode-toggle { display: flex; gap: 6px; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
+.mode-label { font-size: 12px; color: var(--color-text-secondary); margin-right: 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+thead th { font-size: 12px; color: var(--color-text-secondary); font-weight: 500; text-align: left; padding: 6px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+th.num, td.num { text-align: right; }
+tbody tr:hover td { background: var(--color-background-secondary); }
+td { padding: 7px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); vertical-align: middle; }
+.bar-wrap { background: var(--color-background-secondary); border-radius: 4px; height: 6px; overflow: hidden; }
+.bar-fill { height: 6px; border-radius: 4px; background: #378ADD; transition: width 0.3s; }
+.num-input { width: 44px; padding: 3px 5px; font-size: 13px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); text-align: center; }
+.num-input:focus { outline: none; box-shadow: 0 0 0 2px var(--color-border-info); }
+.changed { border-color: #EF9F27 !important; background: var(--color-background-warning) !important; }
+.tag-edit { font-size: 10px; background: var(--color-background-warning); color: var(--color-text-warning); border-radius: var(--border-radius-md); padding: 1px 6px; margin-left: 4px; }
+.tooltip-wrap { position: relative; display: inline-block; }
+.tooltip-icon { font-size: 12px; color: var(--color-text-tertiary); cursor: default; margin-left: 4px; }
+.tooltip-box { display: none; position: absolute; left: 0; top: 18px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 6px 10px; font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; z-index: 10; min-width: 220px; line-height: 1.5; }
+.tooltip-wrap:hover .tooltip-box { display: block; }
+.hint { font-size: 11px; color: var(--color-text-secondary); margin-top: 1rem; }
+.nota-apc { font-size: 11px; color: var(--color-text-secondary); background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 8px 12px; margin-bottom: 1rem; border-left: 3px solid #378ADD; }
+</style>
+
+<div class="wrap">
+  <h2 class="sr-only">Distribuição de orçamento PPG com fatores de custo baseados em APC reais (ecologia/zoologia/conservação/evolução)</h2>
+
+  <div class="nota-apc">
+    <strong>Fator B recalibrado</strong> com base em APCs reais 2025 nas áreas de ecologia, zoologia, morfofisiologia, conservação e evolução (Wiley, Elsevier, Springer Nature). Acordos transformativos CAPES (Elsevier, Springer Nature, Wiley) foram considerados como redutores do custo efetivo para periódicos híbridos elegíveis.
+  </div>
+
+  <div class="controls">
+    <label>Orçamento total (R$)</label>
+    <input type="range" id="orcamento" min="5000" max="50000" step="500" value="20000">
+    <span id="orc-label">R$ 20.000</span>
+  </div>
+
+  <div class="metric-grid">
+    <div class="metric"><p class="metric-label">Total alocado</p><p class="metric-value" id="m-total">R$ 20.000</p></div>
+    <div class="metric"><p class="metric-label">Piso mínimo garantido</p><p class="metric-value" id="m-pisos">—</p></div>
+    <div class="metric"><p class="metric-label">Disponível por demanda</p><p class="metric-value" id="m-demanda">—</p></div>
+  </div>
+
+  <div class="mode-toggle">
+    <span class="mode-label">Editar:</span>
+    <button class="mode-btn active" id="btn-ocorr" onclick="setMode('ocorr')">Ocorrências</button>
+    <button class="mode-btn" id="btn-peso" onclick="setMode('peso')">Fator custo</button>
+    <button class="mode-btn" id="btn-piso" onclick="setMode('piso')">Pisos mínimos</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:33%">Categoria</th>
+        <th class="num" style="width:9%" id="th-ocorr">Ocorr.</th>
+        <th class="num" style="width:9%" id="th-fator">Fator B</th>
+        <th class="num" style="width:8%">Peso</th>
+        <th class="num" style="width:13%">Valor alocado</th>
+        <th class="num" style="width:11%" id="th-piso">Piso mín.</th>
+        <th style="width:17%">Proporção</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <p class="hint">Campos destacados em âmbar indicam valores alterados em relação ao original. Passe o mouse sobre o fator B para ver a justificativa.</p>
+</div>
+
+<script>
+const cats = [
+  {
+    linha:"VIII",
+    label:"Eventos científicos, congressos e diárias",
+    ocorr:19, custo:5, piso:800,
+    tip:"Passagens nacionais (~R$800–2.000) + internacionais (~R$3.000–8.000) + diárias + inscrições. Custo médio por ocorrência: R$2.500–4.000. Fator mais alto do orçamento."
+  },
+  {
+    linha:"VII",
+    label:"Apoio à realização de eventos científicos no país",
+    ocorr:7, custo:3, piso:600,
+    tip:"Coffee break, material gráfico, locação de espaço, kit participante. Custo médio estimado por evento: R$1.500–3.000."
+  },
+  {
+    linha:"XI",
+    label:"Apoio a disciplinas em outros PPGs",
+    ocorr:6, custo:2, piso:400,
+    tip:"Deslocamento e hospedagem para aulas/bancas externas. Custo médio: R$500–1.200 por ocorrência."
+  },
+  {
+    linha:"III",
+    label:"Importação e transporte de amostras",
+    ocorr:3, custo:3, piso:600,
+    tip:"Taxas de importação, despachante, frete internacional/nacional. Custo médio: R$1.000–3.500 por envio."
+  },
+  {
+    linha:"I",
+    label:"Manutenção de equipamentos laboratoriais",
+    ocorr:2, custo:3, piso:500,
+    tip:"Calibração, peças de reposição, visita técnica. Custo médio: R$800–2.500 por intervenção."
+  },
+  {
+    linha:"IV",
+    label:"Cursos e treinamentos laboratoriais",
+    ocorr:2, custo:2, piso:400,
+    tip:"Inscrições em workshops/cursos de técnicas (ex: ImageJ, bioinformática, microscopia). Custo médio: R$400–1.200."
+  },
+  {
+    linha:"V",
+    label:"Publicação de artigos científicos",
+    ocorr:2, custo:4, piso:1200,
+    tip:"APCs reais 2025: Ecology & Evolution (Wiley) USD 2.700; Biological Conservation (Elsevier) USD 3.640; Mol. Phylogen. Evolution USD 3.640; Evol. Applications USD 4.320. Acordos CAPES cobrem periódicos híbridos elegíveis, mas periódicos gold OA e taxas extras (figuras coloridas, páginas) permanecem. Fator aumentado para 4 para cobrir casos sem cobertura CAPES."
+  },
+  {
+    linha:"VI",
+    label:"Acesso a periódicos fora do Portal CAPES",
+    ocorr:1, custo:2, piso:350,
+    tip:"Assinatura de periódicos especializados não cobertos pelo Portal CAPES. Custo médio anual: R$500–1.500."
+  },
+  {
+    linha:"IX",
+    label:"Convidados externos",
+    ocorr:1, custo:2, piso:300,
+    tip:"Passagem + diária para palestrante/colaborador convidado. Custo médio: R$400–1.000 por convite."
+  },
+];
+
+const originals = cats.map(c=>({ocorr:c.ocorr, custo:c.custo, piso:c.piso}));
+let mode = 'ocorr';
+const inputs = [];
+
+function setMode(m) {
+  mode = m;
+  ['ocorr','peso','piso'].forEach(k => document.getElementById('btn-'+k).classList.toggle('active', k===m));
+  document.getElementById('th-ocorr').innerHTML = m==='ocorr' ? 'Ocorr. <span class="tag-edit">editável</span>' : 'Ocorr.';
+  document.getElementById('th-fator').innerHTML = m==='peso' ? 'Fator B <span class="tag-edit">editável</span>' : 'Fator B';
+  document.getElementById('th-piso').innerHTML  = m==='piso'  ? 'Piso mín. <span class="tag-edit">editável</span>' : 'Piso mín.';
+  inputs.forEach((row,i) => {
+    row.ocorr.disabled = m!=='ocorr'; row.ocorr.style.opacity = m==='ocorr'?'1':'0.45';
+    row.peso.disabled  = m!=='peso';  row.peso.style.opacity  = m==='peso' ?'1':'0.45';
+    row.piso.disabled  = m!=='piso';  row.piso.style.opacity  = m==='piso' ?'1':'0.45';
+    checkChanged(i);
+  });
+}
+
+function checkChanged(i) {
+  if(!inputs[i]) return;
+  const o = originals[i];
+  inputs[i].ocorr.classList.toggle('changed', parseInt(inputs[i].ocorr.value)!==o.ocorr);
+  inputs[i].peso.classList.toggle('changed',  parseInt(inputs[i].peso.value)!==o.custo);
+  inputs[i].piso.classList.toggle('changed',  parseInt(inputs[i].piso.value)!==o.piso);
+}
+
+function render() {
+  const orc = parseInt(document.getElementById('orcamento').value);
+  document.getElementById('orc-label').textContent = 'R$ '+orc.toLocaleString('pt-BR');
+  document.getElementById('m-total').textContent   = 'R$ '+orc.toLocaleString('pt-BR');
+  const vals = inputs.map(row=>({
+    peso: Math.max(0,parseInt(row.ocorr.value)||0) * Math.max(1,parseInt(row.peso.value)||1),
+    piso: Math.max(0,parseInt(row.piso.value)||0)
+  }));
+  const totalPisos = vals.reduce((s,v)=>s+v.piso,0);
+  const totalPeso  = vals.reduce((s,v)=>s+v.peso,0);
+  const disponivel = Math.max(0, orc-totalPisos);
+  document.getElementById('m-pisos').textContent   = 'R$ '+totalPisos.toLocaleString('pt-BR');
+  document.getElementById('m-demanda').textContent = 'R$ '+disponivel.toLocaleString('pt-BR');
+  document.querySelectorAll('#tbody tr').forEach((tr,i)=>{
+    const v = vals[i];
+    const extra = totalPeso>0 ? Math.round((v.peso/totalPeso)*disponivel) : 0;
+    const total = v.piso+extra;
+    const pct = Math.round((total/orc)*100);
+    tr.querySelector('.val').textContent  = 'R$ '+total.toLocaleString('pt-BR');
+    tr.querySelector('.pct').textContent  = pct+'%';
+    tr.querySelector('.pw').textContent   = v.peso;
+    tr.querySelector('.bar-fill').style.width = Math.min(pct,100)+'%';
+  });
+}
+
+function buildTable() {
+  const tbody = document.getElementById('tbody');
+  cats.forEach((c,i)=>{
+    const tr = document.createElement('tr');
+
+    const iO = document.createElement('input');
+    iO.type='number'; iO.min=0; iO.max=999; iO.value=c.ocorr; iO.step=1; iO.className='num-input';
+    iO.addEventListener('input',()=>{checkChanged(i);render();});
+
+    const iP = document.createElement('input');
+    iP.type='number'; iP.min=1; iP.max=9; iP.value=c.custo; iP.step=1; iP.className='num-input'; iP.disabled=true; iP.style.opacity='0.45';
+    iP.addEventListener('input',()=>{checkChanged(i);render();});
+
+    const iPiso = document.createElement('input');
+    iPiso.type='number'; iPiso.min=0; iPiso.max=99999; iPiso.value=c.piso; iPiso.step=50; iPiso.className='num-input'; iPiso.disabled=true; iPiso.style.opacity='0.45';
+    iPiso.addEventListener('input',()=>{checkChanged(i);render();});
+
+    inputs.push({ocorr:iO, peso:iP, piso:iPiso});
+
+    const tdL = document.createElement('td');
+    tdL.innerHTML = `<span style="color:var(--color-text-tertiary);font-size:11px">Linha ${c.linha}</span><br>${c.label}`;
+
+    const tdO = document.createElement('td'); tdO.className='num'; tdO.appendChild(iO);
+
+    const tdF = document.createElement('td'); tdF.className='num';
+    const twrap = document.createElement('span'); twrap.className='tooltip-wrap';
+    twrap.appendChild(iP);
+    const icon = document.createElement('i'); icon.className='tooltip-icon ti ti-info-circle'; icon.setAttribute('aria-hidden','true');
+    const box = document.createElement('span'); box.className='tooltip-box'; box.textContent=c.tip;
+    twrap.appendChild(icon); twrap.appendChild(box);
+    tdF.appendChild(twrap);
+
+    const tdPW = document.createElement('td'); tdPW.className='num';
+    const pw = document.createElement('span'); pw.className='pw'; pw.style.fontWeight='500'; pw.textContent=c.ocorr*c.custo;
+    tdPW.appendChild(pw);
+
+    const tdV = document.createElement('td'); tdV.className='num val'; tdV.style.fontWeight='500'; tdV.textContent='—';
+
+    const tdPiso = document.createElement('td'); tdPiso.className='num'; tdPiso.appendChild(iPiso);
+
+    const tdBar = document.createElement('td');
+    tdBar.innerHTML='<div style="display:flex;align-items:center;gap:6px"><div class="bar-wrap" style="flex:1"><div class="bar-fill" style="width:0%"></div></div><span class="pct" style="font-size:12px;color:var(--color-text-secondary);min-width:28px;text-align:right">0%</span></div>';
+
+    tr.appendChild(tdL); tr.appendChild(tdO); tr.appendChild(tdF); tr.appendChild(tdPW);
+    tr.appendChild(tdV); tr.appendChild(tdPiso); tr.appendChild(tdBar);
+    tbody.appendChild(tr);
+  });
+}
+
+buildTable();
+document.getElementById('orcamento').addEventListener('input', render);
+render();
+</script>
