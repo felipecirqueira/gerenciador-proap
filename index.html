@@ -1,7 +1,6 @@
-
 <style>
 .wrap { padding: 1rem 0; }
-.metric-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 1.5rem; }
+.metric-grid { display: grid; grid-template-columns: repeat(1,1fr); gap: 12px; margin-bottom: 1.5rem; }
 .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; }
 .metric-label { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 4px; }
 .metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin: 0; }
@@ -28,16 +27,10 @@ td { padding: 7px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); 
 .tooltip-icon { font-size: 12px; color: var(--color-text-tertiary); cursor: default; margin-left: 4px; }
 .tooltip-box { display: none; position: absolute; left: 0; top: 18px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 6px 10px; font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; z-index: 10; min-width: 220px; line-height: 1.5; }
 .tooltip-wrap:hover .tooltip-box { display: block; }
-.hint { font-size: 11px; color: var(--color-text-secondary); margin-top: 1rem; }
-.nota-apc { font-size: 11px; color: var(--color-text-secondary); background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 8px 12px; margin-bottom: 1rem; border-left: 3px solid #378ADD; }
 </style>
 
 <div class="wrap">
-  <h2 class="sr-only">Distribuição de orçamento PPG com fatores de custo baseados em APC reais (ecologia/zoologia/conservação/evolução)</h2>
-
-  <div class="nota-apc">
-    <strong>Fator B recalibrado</strong> com base em APCs reais 2025 nas áreas de ecologia, zoologia, morfofisiologia, conservação e evolução (Wiley, Elsevier, Springer Nature). Acordos transformativos CAPES (Elsevier, Springer Nature, Wiley) foram considerados como redutores do custo efetivo para periódicos híbridos elegíveis.
-  </div>
+  <h2 class="sr-only">Distribuição de orçamento PPG baseado em votação discente</h2>
 
   <div class="controls">
     <label>Orçamento total (R$)</label>
@@ -47,14 +40,12 @@ td { padding: 7px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); 
 
   <div class="metric-grid">
     <div class="metric"><p class="metric-label">Total alocado</p><p class="metric-value" id="m-total">R$ 20.000</p></div>
-    <div class="metric"><p class="metric-label">Piso mínimo garantido</p><p class="metric-value" id="m-pisos">—</p></div>
-    <div class="metric"><p class="metric-label">Disponível por demanda</p><p class="metric-value" id="m-demanda">—</p></div>
   </div>
 
   <div class="mode-toggle">
     <span class="mode-label">Editar:</span>
-    <button class="mode-btn active" id="btn-ocorr" onclick="setMode('ocorr')">Ocorrências</button>
-    <button class="mode-btn" id="btn-peso" onclick="setMode('peso')">Fator custo</button>
+    <button class="mode-btn active" id="btn-ocorr" onclick="setMode('ocorr')">Ocorrência (Fator A)</button>
+    <button class="mode-btn" id="btn-peso" onclick="setMode('peso')">Fator B</button>
     <button class="mode-btn" id="btn-piso" onclick="setMode('piso')">Pisos mínimos</button>
   </div>
 
@@ -62,7 +53,7 @@ td { padding: 7px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); 
     <thead>
       <tr>
         <th style="width:33%">Categoria</th>
-        <th class="num" style="width:9%" id="th-ocorr">Ocorr.</th>
+        <th class="num" style="width:9%" id="th-ocorr">Ocorr. (Fator A)</th>
         <th class="num" style="width:9%" id="th-fator">Fator B</th>
         <th class="num" style="width:8%">Peso</th>
         <th class="num" style="width:13%">Valor alocado</th>
@@ -72,7 +63,6 @@ td { padding: 7px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); 
     </thead>
     <tbody id="tbody"></tbody>
   </table>
-  <p class="hint">Campos destacados em âmbar indicam valores alterados em relação ao original. Passe o mouse sobre o fator B para ver a justificativa.</p>
 </div>
 
 <script>
@@ -140,7 +130,7 @@ const inputs = [];
 function setMode(m) {
   mode = m;
   ['ocorr','peso','piso'].forEach(k => document.getElementById('btn-'+k).classList.toggle('active', k===m));
-  document.getElementById('th-ocorr').innerHTML = m==='ocorr' ? 'Ocorr. <span class="tag-edit">editável</span>' : 'Ocorr.';
+  document.getElementById('th-ocorr').innerHTML = m==='ocorr' ? 'Ocorr. (Fator A) <span class="tag-edit">editável</span>' : 'Ocorr. (Fator A)';
   document.getElementById('th-fator').innerHTML = m==='peso' ? 'Fator B <span class="tag-edit">editável</span>' : 'Fator B';
   document.getElementById('th-piso').innerHTML  = m==='piso'  ? 'Piso mín. <span class="tag-edit">editável</span>' : 'Piso mín.';
   inputs.forEach((row,i) => {
@@ -170,8 +160,6 @@ function render() {
   const totalPisos = vals.reduce((s,v)=>s+v.piso,0);
   const totalPeso  = vals.reduce((s,v)=>s+v.peso,0);
   const disponivel = Math.max(0, orc-totalPisos);
-  document.getElementById('m-pisos').textContent   = 'R$ '+totalPisos.toLocaleString('pt-BR');
-  document.getElementById('m-demanda').textContent = 'R$ '+disponivel.toLocaleString('pt-BR');
   document.querySelectorAll('#tbody tr').forEach((tr,i)=>{
     const v = vals[i];
     const extra = totalPeso>0 ? Math.round((v.peso/totalPeso)*disponivel) : 0;
@@ -194,7 +182,7 @@ function buildTable() {
     iO.addEventListener('input',()=>{checkChanged(i);render();});
 
     const iP = document.createElement('input');
-    iP.type='number'; iP.min=1; iP.max=9; iP.value=c.custo; iP.step=1; iP.className='num-input'; iP.disabled=true; iP.style.opacity='0.45';
+    iP.type='number'; iP.min=1; iP.max=9; iP.value=c.custo; iP.step=1; iP.className='num-input';
     iP.addEventListener('input',()=>{checkChanged(i);render();});
 
     const iPiso = document.createElement('input');
